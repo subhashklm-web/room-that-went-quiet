@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Room That Went Quiet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--teal:#0f766e;--teal-d:#0b5a54;--teal-l:#e6f4f1;--ink:#1f2933;--muted:#5b6672;--line:#e3e8ec;--bg:#fafbfc;--good:#0f766e;--mid:#b7791f;--bad:#c2410c}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6}
+header{display:flex;align-items:center;gap:16px;padding:14px 20px;background:#fff;border-bottom:1px solid var(--line)}
+.brand{background:var(--teal);color:#fff;border-radius:10px;padding:9px 16px;font-weight:600;white-space:nowrap}
+.htitle b{display:block;font-size:15px}.htitle span{font-size:13px;color:var(--muted)}
+main{max-width:760px;margin:0 auto;padding:40px 16px 80px}
+h1{font-size:clamp(26px,5vw,36px);text-align:center;margin:0 0 8px;letter-spacing:-.02em}
+.sub{text-align:center;color:var(--muted);margin:0 0 6px}
+.welcome{text-align:center;color:var(--teal);font-weight:600}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:28px;margin-top:28px}
+.eyebrow{color:var(--teal);font-weight:700;letter-spacing:.08em;font-size:13px;text-transform:uppercase;margin:0 0 12px}
+label{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}
+input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font:inherit}
+input:focus{outline:2px solid var(--teal);border-color:transparent}
+button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:12px 22px;cursor:pointer;background:var(--teal);color:#fff}
+button:hover{background:var(--teal-d)}button:disabled{opacity:.5;cursor:default}
+.err{color:var(--bad);font-size:14px;min-height:20px;margin-top:10px}
+.progress{display:flex;gap:6px;margin-bottom:18px}.progress i{flex:1;height:6px;border-radius:3px;background:var(--line)}.progress i.on{background:var(--teal)}
+.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:14px;margin-bottom:6px}
+.situation{background:var(--teal-l);border-left:4px solid var(--teal);padding:16px 18px;border-radius:8px;margin:12px 0 18px}
+.opt{display:flex;gap:14px;align-items:flex-start;width:100%;text-align:left;background:#fff;color:var(--ink);border:1.5px solid var(--line);padding:14px 16px;margin:10px 0;font-weight:500;line-height:1.5}
+.opt:hover{background:#f3f8f7;border-color:var(--teal)}.opt.sel{border-color:var(--teal);background:var(--teal-l)}
+.opt b{flex:none;width:28px;height:28px;border-radius:50%;background:var(--teal-l);color:var(--teal);display:grid;place-items:center;font-size:14px}
+.fb{border-radius:12px;padding:18px;margin-top:16px}.fb.good{background:#e7f6ef}.fb.mid{background:#fdf4e3}.fb.bad{background:#fdece4}
+.pts{font-size:22px;font-weight:800}
+.wait{text-align:center}.pulse{width:14px;height:14px;border-radius:50%;background:var(--teal);margin:0 auto 14px;animation:p 1.4s infinite}
+@keyframes p{0%{box-shadow:0 0 0 0 rgba(15,118,110,.5)}100%{box-shadow:0 0 0 18px rgba(15,118,110,0)}}
+.score{font-size:56px;font-weight:800;color:var(--teal);text-align:center;line-height:1}
+.review{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}.review td{padding:8px 4px;border-bottom:1px solid var(--line)}
+.right{text-align:right}
+ul{padding-left:20px}
+</style>
+</head>
+<body>
+<header><div class="brand" id="brand">Aviation Training Centre</div><div class="htitle"><b id="htitle">The Room That Went Quiet</b><span id="hmod"></span></div></header>
+<main id="app"></main>
+<script>
+const code = decodeURIComponent(location.pathname.split('/').pop()).toLowerCase();
+const app = document.getElementById('app');
+let info, timer, busy = false, feedbackShown = false;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const api = (u, body) => fetch(u, body ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)} : {}).then(async r => ({ok:r.ok, data: await r.json()}));
+
+function header(name){
+  return `<h1>${esc(info.title)}</h1><p class="sub">${esc(info.subtitle)}</p>${name ? `<p class="welcome">Welcome, ${esc(name)}</p>` : ''}`;
+}
+function about(){
+  return `<div class="card"><p class="eyebrow">What this simulation is about</p><p>${esc(info.intro)}</p>
+  <p>You will practise how to:</p><ul>${info.objectives.map(o => `<li>${esc(o)}</li>`).join('')}</ul></div>`;
+}
+function joinView(){
+  app.innerHTML = header() + about() + `<div class="card"><p class="eyebrow">Join the session</p>
+  <form id="f"><label for="n">Your name</label><input id="n" required autocomplete="name">
+  <label for="e">Your email</label><input id="e" type="email" required autocomplete="email">
+  <div class="err" id="err"></div><button>Join</button></form></div>`;
+  document.getElementById('f').onsubmit = async ev => {
+    ev.preventDefault();
+    const r = await api('/api/join', {batch: code, name: n.value, email: e.value});
+    if (!r.ok) return err.textContent = r.data.error;
+    refresh();
+  };
+}
+function waitView(me){
+  app.innerHTML = header(me.name) + about() + `<div class="card wait"><div class="pulse"></div>
+  <b>You're in the waiting room.</b><p class="sub">The simulation will begin when your trainer starts the session. Keep this page open.</p></div>`;
+}
+function roundView(me){
+  const r = me.round;
+  app.innerHTML = header(me.name) + `<div class="card">
+  <div class="progress">${Array.from({length: me.rounds}, (_, i) => `<i class="${i <= r.index ? 'on' : ''}"></i>`).join('')}</div>
+  <div class="meta"><span>Round ${r.index + 1} of ${me.rounds} · ${esc(r.time)}</span><span>Score ${me.total}</span></div>
+  <h2 style="margin:4px 0">${esc(r.title)}</h2>
+  <div class="situation">${esc(r.situation)}</div>
+  <p><b>${esc(r.question)}</b></p>
+  <div id="opts">${r.options.map(o => `<button class="opt" data-id="${o.id}"><b>${o.id}</b><span>${esc(o.text)}</span></button>`).join('')}</div>
+  <div id="fb"></div></div>`;
+  document.querySelectorAll('.opt').forEach(btn => btn.onclick = async () => {
+    if (busy) return; busy = true;
+    document.querySelectorAll('.opt').forEach(b => b.disabled = true); btn.classList.add('sel');
+    const res = await api('/api/answer', {round: r.index, option: btn.dataset.id});
+    busy = false;
+    if (!res.ok) { fb.innerHTML = `<div class="err">${esc(res.data.error)}</div>`; return refresh(); }
+    const d = res.data; const cls = d.points === d.best ? 'good' : d.points >= d.best / 2 ? 'mid' : 'bad';
+    feedbackShown = true;
+    fb.innerHTML = `<div class="fb ${cls}"><div class="pts">+${d.points} <span style="font-size:15px;font-weight:500">of ${d.best} points</span></div>
+      <p style="margin:8px 0 0">${esc(d.feedback)}</p>${d.points !== d.best ? `<p style="margin:8px 0 0;font-size:14px">Strongest response: <b>${d.bestId}</b></p>` : ''}</div>
+      <p style="text-align:right;margin-top:16px"><button id="next">${r.index + 1 === me.rounds ? 'See my results' : 'Next round →'}</button></p>`;
+    document.getElementById('next').onclick = () => { feedbackShown = false; refresh(); };
+  });
+}
+function doneView(me){
+  app.innerHTML = header(me.name) + `<div class="card"><p class="eyebrow" style="text-align:center">Your result</p>
+  <div class="score">${me.total}<span style="font-size:24px;color:var(--muted)"> / ${me.maxScore}</span></div>
+  <p class="sub" style="margin-top:10px">You are currently <b>#${me.rank}</b> of ${me.of} in this group.</p>
+  <table class="review">${me.review.map((x, i) => `<tr><td>${i + 1}. ${esc(x.title)}</td><td>You chose <b>${x.chose}</b>${x.chose !== x.best ? ` · best <b>${x.best}</b>` : ''}</td><td class="right"><b>${x.points}</b>/${x.bestPoints}</td></tr>`).join('')}</table></div>
+  <div class="card"><p class="eyebrow">Key takeaways</p>${me.debrief.map(d => `<p><b>${esc(d.heading)}.</b> ${esc(d.text)}</p>`).join('')}</div>`;
+}
+async function refresh(){
+  if (busy || feedbackShown) return;
+  const r = await api('/api/me?batch=' + encodeURIComponent(code));
+  const me = r.data;
+  clearTimeout(timer);
+  if (!me.joined) return joinView();
+  if (!me.started) { waitView(me); timer = setTimeout(refresh, 3000); return; }
+  if (me.round) return roundView(me);
+  doneView(me);
+  timer = setTimeout(refresh, 10000); // keep rank fresh
+}
+api('/api/info').then(r => {
+  info = r.data;
+  document.getElementById('brand').textContent = info.brand;
+  document.getElementById('htitle').textContent = info.title;
+  document.getElementById('hmod').textContent = info.module;
+  refresh();
+});
+</script>
+</body>
+</html>
